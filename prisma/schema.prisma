@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Photographer {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  studioName   String?
+  phone        String?
+  city         String?
+  createdAt    DateTime @default(now())
+  events       Event[]
+}
+
+model Event {
+  id             String        @id @default(cuid())
+  photographerId String
+  name           String
+  description    String?
+  eventType      String
+  eventDate      DateTime
+  passcode       String        @unique
+  coverPhoto     String?
+  status         String        @default("ACTIVE")
+  createdAt      DateTime      @default(now())
+  photographer   Photographer  @relation(fields: [photographerId], references: [id])
+  photos         Photo[]
+  scanSessions   ScanSession[]
+}
+
+model Photo {
+  id            String      @id @default(cuid())
+  eventId       String
+  cloudinaryId  String
+  url           String
+  thumbnailUrl  String?
+  fileType      String      @default("IMAGE")
+  fileSizeBytes Int
+  facesIndexed  Boolean     @default(false)
+  uploadedAt    DateTime    @default(now())
+  event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  faceIndexes   FaceIndex[]
+}
+
+model FaceIndex {
+  id                String @id @default(cuid())
+  photoId           String
+  eventId           String
+  rekognitionFaceId String
+  boundingBox       Json
+  confidence        Float
+  photo             Photo  @relation(fields: [photoId], references: [id], onDelete: Cascade)
+}
+
+model ScanSession {
+  id              String   @id @default(cuid())
+  eventId         String
+  matchedPhotoIds Json
+  createdAt       DateTime @default(now())
+  event           Event    @relation(fields: [eventId], references: [id])
+}
